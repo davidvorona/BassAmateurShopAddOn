@@ -18,6 +18,10 @@ end
 local function bestCatchName(summary)
     if summary.bestItemId == 0 then return "-" end
     local name = C_Item.GetItemInfo(summary.bestItemId)
+    -- Remove "Raw -" prefix from best catch name
+    if name then
+        name = name:gsub("Raw ", "", 1)
+    end
     return (name or ("Item " .. summary.bestItemId)) .. " (" .. summary.bestPoints .. ")"
 end
 
@@ -223,7 +227,8 @@ function RankingsTab.Refresh()
     wipe(entries)
     local own = sync.GetOwnSummary()
     own.received = time()
-    entries[1] = { key = SELF_KEY, name = UnitName("player"), summary = own }
+
+    entries[1] = { key = SELF_KEY, name = ns.PlayerFullName(), summary = own }
     for _, entry in pairs(byName) do entries[#entries + 1] = entry end
     table.sort(entries, function(a, b)
         if a.summary.points ~= b.summary.points then return a.summary.points > b.summary.points end

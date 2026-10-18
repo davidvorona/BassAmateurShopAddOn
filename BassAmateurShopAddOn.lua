@@ -1,3 +1,5 @@
+local _, ns = ...
+
 if not BassAmateurShopAddOnDB then
     BassAmateurShopAddOnDB = { catches = {}, points = 0, showGuild = true, showFriends = true }
 end
@@ -29,21 +31,29 @@ mainFrame:SetScript("OnHide", function()
     PlaySound(808)
 end)
 
+local function PlayerFullName()
+    local name, surname = UnitName("player")
+    if surname then
+        name = name .. " " .. surname
+    end
+    return name;
+end
+ns.PlayerFullName = PlayerFullName
+
 mainFrame.playerName = mainFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
 mainFrame.playerName:SetPoint("TOPLEFT", mainFrame, "TOPLEFT", 15, -30)
-mainFrame.playerName:SetText(UnitName("player") .. " (Level " .. UnitLevel("player") .. ")")
+mainFrame.playerName:SetText(PlayerFullName() .. " (Level " .. UnitLevel("player") .. ")")
 
 mainFrame.guildText = mainFrame:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
 mainFrame.guildText:SetPoint("TOPLEFT", mainFrame.playerName, "BOTTOMLEFT", 0, -2)
 
-local _, ns = ...
 -- Rarities that trigger the level-up style banner.
 local BANNER_RARITIES = { Epic = true, Legendary = true, Artifact = true }
 
 -- Big points readout: counts up to the new total and flashes white on gain.
 local pointsLabel = mainFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
 pointsLabel:SetPoint("TOPRIGHT", mainFrame, "TOPRIGHT", -20, -30)
-pointsLabel:SetText("|cffaaaaaaTOTAL POINTS|r")
+pointsLabel:SetText("|cffaaaaaaANGLER POINTS™|r")
 
 local pointsText = mainFrame:CreateFontString(nil, "OVERLAY")
 pointsText:SetFont("Fonts\\FRIZQT__.TTF", 26, "OUTLINE")
@@ -149,7 +159,7 @@ ns.content = content
 
 -- Guild info isn't available at load time, so this runs again on guild/world events and when the frame opens.
 local function UpdateHeader()
-    mainFrame.playerName:SetText(UnitName("player") .. " (Level " .. UnitLevel("player") .. ")")
+    mainFrame.playerName:SetText(PlayerFullName() .. " (Level " .. UnitLevel("player") .. ")")
     local guildName, rankName = GetGuildInfo("player")
     mainFrame.guildText:Show()
     if guildName then
