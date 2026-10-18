@@ -2,6 +2,10 @@ if not BassAmateurShopAddOnDB then
     BassAmateurShopAddOnDB = { catches = {}, points = 0 }
 end
 
+-- TODO:
+-- Add sync/leaderboard functionality with friends list
+-- Broadcast to guild and Discord webhook on certain events
+
 local mainFrame = CreateFrame("Frame", "BassAmateurShopAddOnMainFrame", UIParent, "BasicFrameTemplateWithInset")
 mainFrame:SetSize(500, 350)
 mainFrame:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
@@ -22,11 +26,11 @@ mainFrame:SetScript("OnDragStop", function(self)
 end)
 
 mainFrame:SetScript("OnShow", function()
-        PlaySound(808)
+    PlaySound(808)
 end)
 
 mainFrame:SetScript("OnHide", function()
-        PlaySound(808)
+    PlaySound(808)
 end)
 
 mainFrame.playerName = mainFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
@@ -221,9 +225,14 @@ local function eventHandler(self, event, ...)
                 local rarity = RollRarity()
                 local itemLevel = select(4, C_Item.GetItemInfo(link)) or 1
                 if itemLevel < 1 then itemLevel = 1 end
+                local points = math.ceil(itemLevel * RARITY_MULTIPLIERS[rarity])
+                local isFirstCatch = not ns.CatchLog.HasFish(link)
+                if isFirstCatch then
+                    points = points * 2 -- Double points for first catchLog
+                end
                 local catch = {
                     rarity = rarity,
-                    points = math.ceil(itemLevel * RARITY_MULTIPLIERS[rarity]),
+                    points = points,
                     time = time(),
                     link = link,
                     name = name,
@@ -235,7 +244,9 @@ local function eventHandler(self, event, ...)
                 BassAmateurShopAddOnDB.points = (BassAmateurShopAddOnDB.points or 0) + catch.points
                 -- Update UI
                 ns.CatchLog.AddCatch(catch, #BassAmateurShopAddOnDB.catches)
-                if BANNER_RARITIES[rarity] then
+                if isFirstCatch then
+                    ns.ShowBanner("FIRST CATCH!", (name or "Unknown fish") .. "  -  " .. points .. " points", RARITY_COLORS[rarity]:sub(3))
+                elseif BANNER_RARITIES[rarity] then
                     ns.ShowBanner(rarity:upper() .. " CATCH!", (name or "Unknown fish") .. "  -  " .. catch.points .. " points", RARITY_COLORS[rarity]:sub(3))
                 end
                 SetPointsDisplay(BassAmateurShopAddOnDB.points or 0, true)

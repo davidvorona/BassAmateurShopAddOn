@@ -46,6 +46,24 @@ function CatchLog.AddCatch(catch, index)
         (catch.points and ("  " .. catch.points .. " pts") or ""))
 end
 
+-- Accepts a fish name (case-insensitive) or an item link/ID.
+function CatchLog.HasFish(fish)
+    local catches = BassAmateurShopAddOnDB and BassAmateurShopAddOnDB.catches
+    if not catches or fish == nil then return false end
+    local itemID = tonumber(fish) or (type(fish) == "string" and tonumber(fish:match("item:(%d+)")))
+    local lowered = type(fish) == "string" and fish:lower()
+    for _, catch in ipairs(catches) do
+        local name = catch.name or (catch.link and catch.link:match("%[(.-)%]"))
+        if itemID and catch.link and tonumber(catch.link:match("item:(%d+)")) == itemID then
+            return true
+        end
+        if lowered and name and name:lower() == lowered then
+            return true
+        end
+    end
+    return false
+end
+
 function CatchLog.Clear()
     catchLog:Clear()
 end
