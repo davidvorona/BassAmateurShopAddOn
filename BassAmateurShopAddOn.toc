@@ -11,5 +11,5 @@
 Banner.lua
 BassAmateurShopAddOn.lua
 CatchLog.lua
-GuildSync.lua
-GuildTab.lua
+PeerSync.lua
+RankingsTab.lua

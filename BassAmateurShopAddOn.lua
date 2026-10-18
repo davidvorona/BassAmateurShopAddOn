@@ -1,13 +1,9 @@
 if not BassAmateurShopAddOnDB then
-    BassAmateurShopAddOnDB = { catches = {}, points = 0 }
+    BassAmateurShopAddOnDB = { catches = {}, points = 0, showGuild = true, showFriends = true }
 end
 
--- TODO:
--- Add sync/leaderboard functionality with friends list
--- Broadcast to guild and Discord webhook on certain events
-
 local mainFrame = CreateFrame("Frame", "BassAmateurShopAddOnMainFrame", UIParent, "BasicFrameTemplateWithInset")
-mainFrame:SetSize(500, 350)
+mainFrame:SetSize(500, 400)
 mainFrame:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
 mainFrame.TitleBg:SetHeight(30)
 mainFrame.title = mainFrame:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
@@ -86,8 +82,8 @@ SLASH_BASSAMATEURSHOPADDON1 = "/bas"
 SlashCmdList["BASSAMATEURSHOPADDON"] = function(msg)
     local shareArg = msg and msg:lower():match("^%s*share%s+(%a+)%s*$")
     if shareArg == "on" or shareArg == "off" then
-        ns.GuildSync.SetSharing(shareArg == "on")
-        print("Bass Amateur Shop: guild sharing " .. shareArg .. ".")
+        ns.PeerSync.SetSharing(shareArg == "on")
+        print("Bass Amateur Shop: guild and friend sharing " .. shareArg .. ".")
         return
     end
     if msg and msg:lower():match("^%s*reset%s*$") then
@@ -95,8 +91,8 @@ SlashCmdList["BASSAMATEURSHOPADDON"] = function(msg)
         ns.CatchLog.Clear()
         BassAmateurShopAddOnDB.points = 0
         SetPointsDisplay(0)
-        ns.GuildTab.Refresh()
-        ns.GuildSync.NotifyChange()
+        ns.RankingsTab.Refresh()
+        ns.PeerSync.NotifyChange()
         print("Bass Amateur Shop: catch history cleared.")
         return
     end
@@ -250,8 +246,8 @@ local function eventHandler(self, event, ...)
                     ns.ShowBanner(rarity:upper() .. " CATCH!", (name or "Unknown fish") .. "  -  " .. catch.points .. " points", RARITY_COLORS[rarity]:sub(3))
                 end
                 SetPointsDisplay(BassAmateurShopAddOnDB.points or 0, true)
-                ns.GuildSync.NotifyChange()
-                ns.GuildTab.Refresh()
+                ns.PeerSync.NotifyChange()
+                ns.RankingsTab.Refresh()
             end
         end
     end
