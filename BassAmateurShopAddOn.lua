@@ -1,5 +1,3 @@
-print("BassAmateurShopAddOn successfully loaded!")
-
 if not BassAmateurShopAddOnDB then
     BassAmateurShopAddOnDB = { catches = {}, points = 0 }
 end
@@ -38,12 +36,9 @@ mainFrame.playerName:SetText(UnitName("player") .. " (Level " .. UnitLevel("play
 mainFrame.guildText = mainFrame:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
 mainFrame.guildText:SetPoint("TOPLEFT", mainFrame.playerName, "BOTTOMLEFT", 0, -2)
 
-local MAX_LOG_LINES = 500
 local _, ns = ...
 -- Rarities that trigger the level-up style banner.
 local BANNER_RARITIES = { Epic = true, Legendary = true, Artifact = true }
-
-local catchLog, RefreshStats
 
 -- Big points readout: counts up to the new total and flashes white on gain.
 local pointsLabel = mainFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
@@ -85,12 +80,19 @@ SetPointsDisplay(0)
 
 SLASH_BASSAMATEURSHOPADDON1 = "/bas"
 SlashCmdList["BASSAMATEURSHOPADDON"] = function(msg)
+    local shareArg = msg and msg:lower():match("^%s*share%s+(%a+)%s*$")
+    if shareArg == "on" or shareArg == "off" then
+        ns.GuildSync.SetSharing(shareArg == "on")
+        print("Bass Amateur Shop: guild sharing " .. shareArg .. ".")
+        return
+    end
     if msg and msg:lower():match("^%s*reset%s*$") then
         wipe(BassAmateurShopAddOnDB.catches)
-        catchLog:Clear()
+        ns.CatchLog.Clear()
         BassAmateurShopAddOnDB.points = 0
         SetPointsDisplay(0)
-        RefreshStats()
+        ns.GuildTab.Refresh()
+        ns.GuildSync.NotifyChange()
         print("Bass Amateur Shop: catch history cleared.")
         return
     end
@@ -113,6 +115,8 @@ local RARITY_CHANCES = {
     { name = "Artifact",  chance = 0.5, color = "ffe6cc80" },
 }
 
+ns.RARITY_CHANCES = RARITY_CHANCES
+
 local RARITY_COLORS = {}
 local RARITY_MULTIPLIERS = {}
 for _, entry in ipairs(RARITY_CHANCES) do
@@ -123,6 +127,7 @@ end
 local function ColorRarity(rarity)
     return "|c" .. RARITY_COLORS[rarity] .. rarity .. "|r"
 end
+ns.ColorRarity = ColorRarity
 
 local function RollRarity()
     local roll = math.random() * 100
@@ -136,102 +141,41 @@ local function RollRarity()
     return RARITY_CHANCES[1].name
 end
 
-catchLog = CreateFrame("ScrollingMessageFrame", nil, mainFrame)
-catchLog:SetPoint("BOTTOMRIGHT", mainFrame, "BOTTOMRIGHT", -15, 15)
+-- Shared area below the header; each tab's page fills it.
+local content = CreateFrame("Frame", nil, mainFrame)
+content:SetPoint("TOPLEFT", mainFrame, "TOPLEFT", 15, -76)
+content:SetPoint("BOTTOMRIGHT", mainFrame, "BOTTOMRIGHT", -15, 15)
+ns.content = content
 
 -- Guild info isn't available at load time, so this runs again on guild/world events and when the frame opens.
--- The log always sits below the guild line.
 local function UpdateHeader()
     mainFrame.playerName:SetText(UnitName("player") .. " (Level " .. UnitLevel("player") .. ")")
     local guildName, rankName = GetGuildInfo("player")
-    catchLog:ClearAllPoints()
-    catchLog:SetPoint("BOTTOMRIGHT", mainFrame, "BOTTOMRIGHT", -15, 15)
     mainFrame.guildText:Show()
     if guildName then
         mainFrame.guildText:SetText("|cff40ff40<" .. guildName .. ">|r" .. (rankName and (" - " .. rankName) or ""))
     else
         mainFrame.guildText:SetText("|cff888888Not in a guild|r")
     end
-    catchLog:SetPoint("TOPLEFT", mainFrame, "TOPLEFT", 15, -76)
 end
 mainFrame:HookScript("OnShow", UpdateHeader)
 UpdateHeader()
-catchLog:SetFontObject(GameFontHighlight)
-catchLog:SetJustifyH("LEFT")
-catchLog:SetFading(false)
-catchLog:SetMaxLines(MAX_LOG_LINES)
-catchLog:EnableMouseWheel(true)
-catchLog:SetScript("OnMouseWheel", function(self, delta)
-    if delta > 0 then self:ScrollUp() else self:ScrollDown() end
-end)
-
-catchLog:SetHyperlinksEnabled(true)
-
--- Nested hyperlinks aren't allowed, so each entry gets a custom link that points at its saved catch.
-catchLog:SetScript("OnHyperlinkEnter", function(self, linkData)
-    local index = tonumber(linkData:match("^bascatch:(%d+)$"))
-    local catch = index and BassAmateurShopAddOnDB.catches[index]
-    if not catch then return end
-    GameTooltip:SetOwner(self, "ANCHOR_CURSOR")
-    GameTooltip:SetHyperlink(catch.link)
-    GameTooltip:AddLine(" ")
-    GameTooltip:AddLine("Catch Record", 1, 0.82, 0)
-    GameTooltip:AddDoubleLine("Rarity:", ColorRarity(catch.rarity))
-    GameTooltip:AddDoubleLine("Points:", tostring(catch.points or 0), 1, 1, 1, 1, 0.82, 0)
-    GameTooltip:AddDoubleLine("Quantity:", tostring(catch.quantity or 1), 1, 1, 1, 1, 1, 1)
-    GameTooltip:AddDoubleLine("Zone:", catch.zone or "Unknown", 1, 1, 1, 1, 1, 1)
-    GameTooltip:AddDoubleLine("Caught:", tostring(date("%Y-%m-%d %H:%M:%S", catch.time)), 1, 1, 1, 1, 1, 1)
-    GameTooltip:Show()
-end)
-catchLog:SetScript("OnHyperlinkLeave", function() GameTooltip:Hide() end)
-
-local function AddCatchLine(catch, index)
-    local color = catch.link:match("|c(%x%x%x%x%x%x%x%x)") or "ffffffff"
-    local name = catch.name or catch.link:match("%[(.-)%]") or "Unknown"
-    local itemText = "|c" .. color .. "|Hbascatch:" .. index .. "|h[" .. name .. "]|h|r"
-    catchLog:AddMessage(date("%H:%M:%S", catch.time) .. "  " .. itemText ..
-        " x" .. (catch.quantity or 1) .. "  [" .. ColorRarity(catch.rarity) .. "]" ..
-        (catch.points and ("  " .. catch.points .. " pts") or ""))
-end
-
-local statsFrame = CreateFrame("Frame", nil, mainFrame)
-statsFrame:SetPoint("TOPLEFT", catchLog, "TOPLEFT")
-statsFrame:SetPoint("BOTTOMRIGHT", catchLog, "BOTTOMRIGHT")
-statsFrame:Hide()
-statsFrame.text = statsFrame:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
-statsFrame.text:SetPoint("TOPLEFT")
-statsFrame.text:SetJustifyH("LEFT")
-statsFrame.text:SetSpacing(4)
-
-RefreshStats = function()
-    local counts, lines = {}, {}
-    local catches = BassAmateurShopAddOnDB.catches
-    for _, catch in ipairs(catches) do
-        counts[catch.rarity] = (counts[catch.rarity] or 0) + 1
-    end
-    lines[1] = "Total catches: " .. #catches
-    for _, entry in ipairs(RARITY_CHANCES) do
-        lines[#lines + 1] = ColorRarity(entry.name) .. ": " .. (counts[entry.name] or 0)
-    end
-    statsFrame.text:SetText(table.concat(lines, "\n"))
-end
 
 -- Side tabs on the right edge of the frame, like the Professions window.
-local TABS = {
-    { name = "Catch Log", icon = "Interface\\Icons\\INV_Misc_Fish_02", page = catchLog },
-    { name = "Stats", icon = "Interface\\Icons\\INV_Misc_Note_01", page = statsFrame },
-}
-local tabButtons = {}
+-- Each tab file calls ns.RegisterTab({ name, icon, page, onSelect }); tabs appear in load order.
+local tabs, tabButtons = {}, {}
 
 local function SelectTab(index)
-    for i, tab in ipairs(TABS) do
+    for i, tab in ipairs(tabs) do
         tab.page:SetShown(i == index)
         tabButtons[i]:SetChecked(i == index)
     end
-    if index == 2 then RefreshStats() end
+    if tabs[index].onSelect then tabs[index].onSelect() end
 end
 
-for i, tab in ipairs(TABS) do
+function ns.RegisterTab(tab)
+    local i = #tabs + 1
+    tabs[i] = tab
     local button = CreateFrame("CheckButton", nil, mainFrame)
     button:SetSize(36, 36)
     button:SetPoint("TOPLEFT", mainFrame, "TOPRIGHT", 0, -60 - (i - 1) * 44)
@@ -252,18 +196,7 @@ for i, tab in ipairs(TABS) do
     end)
     button:SetScript("OnLeave", GameTooltip_Hide)
     tabButtons[i] = button
-end
-SelectTab(1)
-
-local function LoadSavedCatches()
-    catchLog:Clear()
-    local catches = BassAmateurShopAddOnDB.catches
-    -- Only the newest entries fit in the log; keep each catch's real index for its tooltip link.
-    for index = math.max(1, #catches - MAX_LOG_LINES + 1), #catches do
-        AddCatchLine(catches[index], index)
-    end
-    SetPointsDisplay(BassAmateurShopAddOnDB.points or 0)
-    RefreshStats()
+    tab.page:Hide()
 end
 
 local eventFrame = CreateFrame("Frame", "BassAmateurShopAddOnEventFrame", UIParent)
@@ -272,7 +205,11 @@ local function eventHandler(self, event, ...)
     if event == "PLAYER_GUILD_UPDATE" or event == "PLAYER_ENTERING_WORLD" then
         UpdateHeader()
     elseif event == "ADDON_LOADED" then
-        LoadSavedCatches()
+        if ... ~= "BassAmateurShopAddOn" then return end
+        -- Every file has loaded by now, so all tabs are registered.
+        ns.CatchLog.Load()
+        SetPointsDisplay(BassAmateurShopAddOnDB.points or 0)
+        SelectTab(1)
         self:UnregisterEvent("ADDON_LOADED")
     elseif event == "LOOT_OPENED" then
         -- No dedicated fishing event exists, so we rely on the loot window to detect catches.
@@ -297,12 +234,13 @@ local function eventHandler(self, event, ...)
                 table.insert(BassAmateurShopAddOnDB.catches, catch)
                 BassAmateurShopAddOnDB.points = (BassAmateurShopAddOnDB.points or 0) + catch.points
                 -- Update UI
-                AddCatchLine(catch, #BassAmateurShopAddOnDB.catches)
+                ns.CatchLog.AddCatch(catch, #BassAmateurShopAddOnDB.catches)
                 if BANNER_RARITIES[rarity] then
                     ns.ShowBanner(rarity:upper() .. " CATCH!", (name or "Unknown fish") .. "  -  " .. catch.points .. " points", RARITY_COLORS[rarity]:sub(3))
                 end
                 SetPointsDisplay(BassAmateurShopAddOnDB.points or 0, true)
-                if statsFrame:IsShown() then RefreshStats() end
+                ns.GuildSync.NotifyChange()
+                ns.GuildTab.Refresh()
             end
         end
     end

@@ -10,3 +10,6 @@
 
 Banner.lua
 BassAmateurShopAddOn.lua
+CatchLog.lua
+GuildSync.lua
+GuildTab.lua
