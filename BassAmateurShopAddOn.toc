@@ -1,0 +1,12 @@
+## Interface: 16001
+## Title: Bass Amateur Shop
+## Notes: Records your fish collection so you can show it off.
+## Author: Vijuhas
+## Version: 0.0.1
+## RequiredDeps:
+## X-Curse-Project-ID: 999999
+## SavedVariables:
+## SavedVariablesPerCharacter: BassAmateurShopAddOnDB
+
+Banner.lua
+BassAmateurShopAddOn.lua
