@@ -13,7 +13,10 @@ mainFrame.title:SetPoint("TOPLEFT", mainFrame.TitleBg, "TOPLEFT", 5, -3)
 mainFrame.title:SetText("Bass Amateur Shop")
 
 -- Stretched fish icon as a faded background inside the frame body
-mainFrame.bg = mainFrame:CreateTexture(nil, "BACKGROUND", nil, 1)
+-- Parented to the template's Inset child frame (ARTWORK, above its opaque background); a texture on mainFrame itself
+-- sits beneath that child frame and gets covered.
+local bgParent = mainFrame.Inset or mainFrame
+mainFrame.bg = bgParent:CreateTexture(nil, "ARTWORK")
 mainFrame.bg:SetPoint("TOPLEFT", mainFrame, "TOPLEFT", 8, -28)
 mainFrame.bg:SetPoint("BOTTOMRIGHT", mainFrame, "BOTTOMRIGHT", -8, 8)
 mainFrame.bg:SetTexture("Interface\\Icons\\INV_Misc_Fish_25")
@@ -48,9 +51,20 @@ local function PlayerFullName()
 end
 ns.PlayerFullName = PlayerFullName
 
+local function PlayerFishingLevel()
+    local _, _, _, fishingIndex = GetProfessions()
+    local fishingSkillLevel = 1
+    if fishingIndex then
+        local _, _, skillLevel, _ = GetProfessionInfo(fishingIndex)
+        fishingSkillLevel = skillLevel
+    end
+    return fishingSkillLevel
+end
+ns.PlayerFishingLevel = PlayerFishingLevel
+
 mainFrame.playerName = mainFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
 mainFrame.playerName:SetPoint("TOPLEFT", mainFrame, "TOPLEFT", 15, -30)
-mainFrame.playerName:SetText(PlayerFullName() .. " (Level " .. UnitLevel("player") .. ")")
+mainFrame.playerName:SetText(PlayerFullName() .. " (Level " .. PlayerFishingLevel() .. ")")
 
 mainFrame.guildText = mainFrame:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
 mainFrame.guildText:SetPoint("TOPLEFT", mainFrame.playerName, "BOTTOMLEFT", 0, -2)
@@ -167,7 +181,7 @@ ns.content = content
 
 -- Guild info isn't available at load time, so this runs again on guild/world events and when the frame opens.
 local function UpdateHeader()
-    mainFrame.playerName:SetText(PlayerFullName() .. " (Level " .. UnitLevel("player") .. ")")
+    mainFrame.playerName:SetText(PlayerFullName() .. " (Level " .. PlayerFishingLevel() .. ")")
     local guildName, rankName = GetGuildInfo("player")
     mainFrame.guildText:Show()
     if guildName then

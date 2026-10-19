@@ -79,6 +79,6 @@ end
 
 ns.RegisterTab({
     name = "Catch Log",
-    icon = "Interface\\Icons\\INV_Misc_Fish_02",
+    icon = "Interface\\Icons\\Inv_Misc_Book_10",
     page = catchLog,
 })

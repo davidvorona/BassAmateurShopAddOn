@@ -275,7 +275,7 @@ ns.PeerSync.onUpdate = RankingsTab.Refresh
 
 ns.RegisterTab({
     name = "Rankings",
-    icon = "Interface\\Icons\\INV_Shirt_GuildTabard_01",
+    icon = "Interface\\Icons\\INV_Misc_Trophy_Argent",
     page = page,
     onSelect = RankingsTab.Refresh,
 })
