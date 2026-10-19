@@ -12,6 +12,14 @@ mainFrame.title = mainFrame:CreateFontString(nil, "OVERLAY", "GameFontHighlight"
 mainFrame.title:SetPoint("TOPLEFT", mainFrame.TitleBg, "TOPLEFT", 5, -3)
 mainFrame.title:SetText("Bass Amateur Shop")
 
+-- Stretched fish icon as a faded background inside the frame body
+mainFrame.bg = mainFrame:CreateTexture(nil, "BACKGROUND", nil, 1)
+mainFrame.bg:SetPoint("TOPLEFT", mainFrame, "TOPLEFT", 8, -28)
+mainFrame.bg:SetPoint("BOTTOMRIGHT", mainFrame, "BOTTOMRIGHT", -8, 8)
+mainFrame.bg:SetTexture("Interface\\Icons\\INV_Misc_Fish_25")
+mainFrame.bg:SetTexCoord(0.08, 0.92, 0.08, 0.92) -- crop the icon's border
+mainFrame.bg:SetAlpha(0.15)
+
 mainFrame:Hide()
 mainFrame:EnableMouse(true)
 mainFrame:SetMovable(true)
