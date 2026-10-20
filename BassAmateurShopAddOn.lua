@@ -1,7 +1,12 @@
 local _, ns = ...
 
 if not BassAmateurShopAddOnDB then
-    BassAmateurShopAddOnDB = { catches = {}, points = 0, showGuild = true, showFriends = true }
+    BassAmateurShopAddOnDB = {
+        catches = {},
+        points = 0,
+        showGuild = true,
+        showFriends = true
+    }
 end
 
 local mainFrame = CreateFrame("Frame", "BassAmateurShopAddOnMainFrame", UIParent, "BasicFrameTemplateWithInset")
@@ -69,8 +74,11 @@ mainFrame.playerName:SetText(PlayerFullName() .. " (Level " .. PlayerFishingLeve
 mainFrame.guildText = mainFrame:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
 mainFrame.guildText:SetPoint("TOPLEFT", mainFrame.playerName, "BOTTOMLEFT", 0, -2)
 
--- Rarities that trigger the level-up style banner.
-local BANNER_RARITIES = { Epic = true, Legendary = true, Artifact = true }
+-- Index into RARITY_CHANCES of the lowest rarity that triggers the level-up style banner (default Epic).
+local DEFAULT_BANNER_MIN_RARITY = 4
+function ns.GetBannerMinRarity()
+    return BassAmateurShopAddOnDB.bannerMinRarity or DEFAULT_BANNER_MIN_RARITY
+end
 
 -- Big points readout: counts up to the new total and flashes white on gain.
 local pointsLabel = mainFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
@@ -151,7 +159,9 @@ ns.RARITY_CHANCES = RARITY_CHANCES
 
 local RARITY_COLORS = {}
 local RARITY_MULTIPLIERS = {}
-for _, entry in ipairs(RARITY_CHANCES) do
+local RARITY_INDEX = {}
+for i, entry in ipairs(RARITY_CHANCES) do
+    RARITY_INDEX[entry.name] = i
     RARITY_COLORS[entry.name] = entry.color
     RARITY_MULTIPLIERS[entry.name] = 100 / entry.chance
 end
@@ -274,7 +284,7 @@ local function eventHandler(self, event, ...)
                 ns.CatchLog.AddCatch(catch, #BassAmateurShopAddOnDB.catches)
                 if isFirstCatch then
                     ns.ShowBanner("FIRST CATCH!", (name or "Unknown fish") .. "  -  " .. points .. " points", RARITY_COLORS[rarity]:sub(3))
-                elseif BANNER_RARITIES[rarity] then
+                elseif RARITY_INDEX[rarity] >= ns.GetBannerMinRarity() then
                     ns.ShowBanner(rarity:upper() .. " CATCH!", (name or "Unknown fish") .. "  -  " .. catch.points .. " points", RARITY_COLORS[rarity]:sub(3))
                 end
                 SetPointsDisplay(BassAmateurShopAddOnDB.points or 0, true)

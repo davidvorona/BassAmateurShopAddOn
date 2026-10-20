@@ -52,7 +52,6 @@ local function setFilter(key, value)
     end
 end
 
-
 local function makeFilter(label, key, x)
     local check = CreateFrame("CheckButton", nil, page, "UICheckButtonTemplate")
     check:SetSize(22, 22)

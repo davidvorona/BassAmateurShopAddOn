@@ -13,3 +13,4 @@ BassAmateurShopAddOn.lua
 CatchLog.lua
 PeerSync.lua
 RankingsTab.lua
+SettingsTab.lua
