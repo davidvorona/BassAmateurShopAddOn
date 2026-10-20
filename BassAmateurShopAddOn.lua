@@ -10,6 +10,9 @@ if not BassAmateurShopAddOnDB then
     }
 end
 
+-- TODO: Add support for the STV fishing contest, such as bonus points, event announcements, and
+-- a guild broadcast if you win
+
 local mainFrame = CreateFrame("Frame", "BassAmateurShopAddOnMainFrame", UIParent, "BasicFrameTemplateWithInset")
 mainFrame:SetSize(500, 400)
 mainFrame:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
