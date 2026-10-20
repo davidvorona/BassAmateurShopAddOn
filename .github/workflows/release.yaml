@@ -16,10 +16,10 @@ jobs:
 
       - name: Create ZIP of Contents
         run: |
-          git archive --format=zip HEAD -o repository-release.zip
+          git archive --format=zip --prefix=BassAmateurShopAddOn/ HEAD -o "BassAmateurShopAddOn-${{ github.event.release.tag_name }}.zip"
 
       - name: Upload ZIP to Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release upload ${{ github.event.release.tag_name }} repository-release.zip --clobber
+          gh release upload "${{ github.event.release.tag_name }}" "BassAmateurShopAddOn-${{ github.event.release.tag_name }}.zip" --clobber
