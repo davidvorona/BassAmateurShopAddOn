@@ -4,6 +4,7 @@ if not BassAmateurShopAddOnDB then
     BassAmateurShopAddOnDB = {
         catches = {},
         points = 0,
+        achievements = {},
         showGuild = true,
         showFriends = true
     }
@@ -287,6 +288,7 @@ local function eventHandler(self, event, ...)
                 elseif RARITY_INDEX[rarity] >= ns.GetBannerMinRarity() then
                     ns.ShowBanner(rarity:upper() .. " CATCH!", (name or "Unknown fish") .. "  -  " .. catch.points .. " points", RARITY_COLORS[rarity]:sub(3))
                 end
+                ns.EvaluateAchievements(catch, #BassAmateurShopAddOnDB.catches)
                 SetPointsDisplay(BassAmateurShopAddOnDB.points or 0, true)
                 ns.PeerSync.NotifyChange()
                 ns.RankingsTab.Refresh()
