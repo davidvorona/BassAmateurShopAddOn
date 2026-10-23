@@ -7,6 +7,7 @@ local COOLDOWN = 10
 local MAX_QUEUE = 3
 local DEFAULT_MIN_RARITY = 4 -- Epic
 local MILESTONES = { 100, 500, 1000, 5000 }
+local STV_CONTEST_QUEST_ID = 8193 -- Master Angler
 
 function ns.GetAnnounceMinRarity()
     return BassAmateurShopAddOnDB.announceMinRarity or DEFAULT_MIN_RARITY
@@ -50,7 +51,14 @@ end
 
 local events = CreateFrame("Frame")
 events:RegisterEvent("PLAYER_ENTERING_WORLD")
-events:SetScript("OnEvent", RequestGuildInfo)
+events:RegisterEvent("QUEST_TURNED_IN")
+events:SetScript("OnEvent", function(_, event, questID)
+    if event == "PLAYER_ENTERING_WORLD" then
+        RequestGuildInfo()
+    elseif event == "QUEST_TURNED_IN" and questID == STV_CONTEST_QUEST_ID and ns.AnnouncingEnabled() then
+        Enqueue("[BAS] " .. ns.PlayerFullName() .. " won the Stranglethorn Vale Fishing Contest!")
+    end
+end)
 
 -- Called after every catch. Each achievement fires once per character and is recorded even when
 -- announcing is off, so enabling it later doesn't replay old milestones.
