@@ -2,7 +2,7 @@
 ## Title: Bass Amateur Shop
 ## Notes: Records your fish collection so you can show it off.
 ## Author: Vijuhas
-## Version: 0.0.1
+## Version: 0.0.2
 ## RequiredDeps:
 ## X-Curse-Project-ID: 999999
 ## SavedVariables:
