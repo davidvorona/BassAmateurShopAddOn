@@ -33,11 +33,14 @@ local function pump()
         pumping = false
         return
     end
-    if item.channel == "WHISPER" then
-        C_ChatInfo.SendAddonMessage(PREFIX, item.text, "WHISPER", item.target)
-    elseif IsInGuild() then
-        C_ChatInfo.SendAddonMessage(PREFIX, item.text, "GUILD")
-    end
+    -- A failed send must not stop the queue from being pumped.
+    pcall(function()
+        if item.channel == "WHISPER" then
+            C_ChatInfo.SendAddonMessage(PREFIX, item.text, "WHISPER", item.target)
+        elseif IsInGuild() then
+            C_ChatInfo.SendAddonMessage(PREFIX, item.text, "GUILD")
+        end
+    end)
     C_Timer.After(SEND_INTERVAL, pump)
 end
 

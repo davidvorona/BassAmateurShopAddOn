@@ -198,16 +198,20 @@ end
 
 -- Someone who is both a guildmate and a friend appears once, keyed by their short name.
 local function addPeers(byName, data, flag)
+    local me = UnitName("player")
     for sender, summary in pairs(data) do
-        local name = Ambiguate(sender, "guild")
-        local entry = byName[name]
-        if not entry then
-            entry = { key = name, name = name, summary = summary }
-            byName[name] = entry
-        elseif summary.received > entry.summary.received then
-            entry.summary = summary
+        -- Our own name can be in saved data (e.g. our own guild broadcast echoed back); never list it as a peer.
+        if Ambiguate(sender, "short") ~= me then
+            local name = Ambiguate(sender, "guild")
+            local entry = byName[name]
+            if not entry then
+                entry = { key = name, name = name, summary = summary }
+                byName[name] = entry
+            elseif summary.received > entry.summary.received then
+                entry.summary = summary
+            end
+            entry[flag] = tostring(true)
         end
-        entry[flag] = tostring(true)
     end
 end
 
