@@ -153,7 +153,7 @@ end
 
 local function handleMessage(message, channel, sender)
     if not isSharing() then return end
-    if Ambiguate(sender, "short") == UnitName("player") then return end
+    if Ambiguate(sender, "short") == ns.PlayerFullName() then return end
     if channel ~= "GUILD" and channel ~= "WHISPER" then return end
     local guildMember = channel == "GUILD" or guildRosterNames()[Ambiguate(sender, "guild")] ~= nil
     local friend = isFriend(sender)

@@ -198,7 +198,7 @@ end
 
 -- Someone who is both a guildmate and a friend appears once, keyed by their short name.
 local function addPeers(byName, data, flag)
-    local me = UnitName("player")
+    local me = ns.PlayerFullName()
     for sender, summary in pairs(data) do
         -- Our own name can be in saved data (e.g. our own guild broadcast echoed back); never list it as a peer.
         if Ambiguate(sender, "short") ~= me then
