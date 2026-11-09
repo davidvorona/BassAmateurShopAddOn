@@ -53,9 +53,7 @@ local announceSlider = CreateRaritySlider("BassAmateurShopAddOnAnnounceRaritySli
 local function RefreshAnnounceNote()
     if not IsInGuild() then
         announceNote:SetText("|cff888888You are not in a guild.|r")
-    elseif ns.AnnouncingEnabled() then
-        announceNote:SetText("|cff40ff40Active.|r")
-    else
+    elseif not ns.AnnouncingEnabled() then
         announceNote:SetText("|cffff8000Inactive until your guild's Info text contains [BAS] (set by an officer) and this is checked.|r")
     end
 end

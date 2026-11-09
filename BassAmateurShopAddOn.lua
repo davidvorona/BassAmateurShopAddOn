@@ -256,8 +256,8 @@ local function eventHandler(self, event, ...)
         SetPointsDisplay(BassAmateurShopAddOnDB.points or 0)
         SelectTab(1)
         self:UnregisterEvent("ADDON_LOADED")
-    elseif event == "LOOT_OPENED" then
-        -- No dedicated fishing event exists, so we rely on the loot window to detect catches.
+    elseif event == "LOOT_READY" then
+        -- No dedicated fishing event exists, so inspect loot as soon as it is ready.
         if not IsFishingLoot() then return end
         for slot = 1, GetNumLootItems() do
             local link = GetLootSlotLink(slot)
@@ -301,6 +301,6 @@ end
 
 eventFrame:SetScript("OnEvent", eventHandler)
 eventFrame:RegisterEvent("ADDON_LOADED")
-eventFrame:RegisterEvent("LOOT_OPENED")
+eventFrame:RegisterEvent("LOOT_READY")
 eventFrame:RegisterEvent("PLAYER_GUILD_UPDATE")
 eventFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
