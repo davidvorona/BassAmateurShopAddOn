@@ -50,10 +50,26 @@ announceNote:SetJustifyH("LEFT")
 local announceSlider = CreateRaritySlider("BassAmateurShopAddOnAnnounceRaritySlider", -150,
     "Announce catches of this rarity or better: ", "announceMinRarity", ns.GetAnnounceMinRarity)
 
+local pointsWidgetCheck = CreateFrame("CheckButton", "BassAmateurShopAddOnPointsWidgetCheck", page, "UICheckButtonTemplate")
+pointsWidgetCheck:SetPoint("TOPLEFT", page, "TOPLEFT", 0, -230)
+pointsWidgetCheck.text:SetText("Show angler points widget")
+pointsWidgetCheck:SetScript("OnClick", function(self)
+    BassAmateurShopAddOnDB.showPointsWidget = self:GetChecked() and true or false
+    ns.ShowPointsWidget(BassAmateurShopAddOnDB.showPointsWidget)
+end)
+
+local pointsWidgetNote = page:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+pointsWidgetNote:SetPoint("TOPLEFT", pointsWidgetCheck, "BOTTOMLEFT", 4, 0)
+pointsWidgetNote:SetWidth(440)
+pointsWidgetNote:SetJustifyH("LEFT")
+pointsWidgetNote:SetText("|cff888888A small draggable widget showing your angler points.|r")
+
 local function RefreshAnnounceNote()
     if not IsInGuild() then
         announceNote:SetText("|cff888888You are not in a guild.|r")
-    elseif not ns.AnnouncingEnabled() then
+    elseif ns.AnnouncingEnabled() then
+        announceNote:SetText("|cff00ff00Active.|r")
+    else
         announceNote:SetText("|cffff8000Inactive until your guild's Info text contains [BAS] (set by an officer) and this is checked.|r")
     end
 end
@@ -66,6 +82,7 @@ ns.RegisterTab({
         bannerSlider.Refresh()
         announceSlider.Refresh()
         announceCheck:SetChecked(BassAmateurShopAddOnDB.announceGuild == true)
+        pointsWidgetCheck:SetChecked(BassAmateurShopAddOnDB.showPointsWidget == true)
         RefreshAnnounceNote()
     end,
 })

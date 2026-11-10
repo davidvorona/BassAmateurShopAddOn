@@ -118,6 +118,7 @@ local function SetPointsDisplay(total, animate)
         displayedPoints = total
         pointsText:SetText(tostring(total))
     end
+    ns.UpdatePointsWidget(total)
 end
 SetPointsDisplay(0)
 
@@ -245,6 +246,7 @@ function ns.RegisterTab(tab)
 end
 
 local eventFrame = CreateFrame("Frame", "BassAmateurShopAddOnEventFrame", UIParent)
+local processedLootSlots = {}
 
 local function eventHandler(self, event, ...)
     if event == "PLAYER_GUILD_UPDATE" or event == "PLAYER_ENTERING_WORLD" then
@@ -254,6 +256,7 @@ local function eventHandler(self, event, ...)
         -- Every file has loaded by now, so all tabs are registered.
         ns.CatchLog.Load()
         SetPointsDisplay(BassAmateurShopAddOnDB.points or 0)
+        ns.ShowPointsWidget(BassAmateurShopAddOnDB.showPointsWidget or false)
         SelectTab(1)
         self:UnregisterEvent("ADDON_LOADED")
     elseif event == "LOOT_READY" then
@@ -261,7 +264,8 @@ local function eventHandler(self, event, ...)
         if not IsFishingLoot() then return end
         for slot = 1, GetNumLootItems() do
             local link = GetLootSlotLink(slot)
-            if link then
+            if link and not processedLootSlots[slot] then
+                processedLootSlots[slot] = true
                 local _, name, quantity = GetLootSlotInfo(slot)
                 local rarity = RollRarity()
                 local itemLevel = select(4, C_Item.GetItemInfo(link)) or 1
@@ -296,11 +300,14 @@ local function eventHandler(self, event, ...)
                 ns.RankingsTab.Refresh()
             end
         end
+    elseif event == "LOOT_CLOSED" then
+        wipe(processedLootSlots)
     end
 end
 
 eventFrame:SetScript("OnEvent", eventHandler)
 eventFrame:RegisterEvent("ADDON_LOADED")
 eventFrame:RegisterEvent("LOOT_READY")
+eventFrame:RegisterEvent("LOOT_CLOSED")
 eventFrame:RegisterEvent("PLAYER_GUILD_UPDATE")
 eventFrame:RegisterEvent("PLAYER_ENTERING_WORLD")

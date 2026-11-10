@@ -9,6 +9,7 @@
 ## SavedVariablesPerCharacter: BassAmateurShopAddOnDB
 
 Banner.lua
+PointsWidget.lua
 BassAmateurShopAddOn.lua
 CatchLog.lua
 PeerSync.lua
