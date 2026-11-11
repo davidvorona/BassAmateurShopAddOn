@@ -19,7 +19,7 @@ end
 -- any protected functions.
 -- A recently reported bug with a similar function suggests there is a bug with Trial and Veteran accounts:
 -- https://us.forums.blizzard.com/en/wow/t/guild-add-on-messages-from-some-players-are-accepted-result-0-but-never-delivered/2401862
--- But it is a different function than C_ChatInfo.SendChatMessage, and the bug occurs on an account that is neither a Trial or Veteran.
+-- But it is a different function than C_ChatInfo.SendChatMessage, and the bug occurs on an account that is neither Trial or Veteran.
 
 local mainFrame = CreateFrame("Frame", "BassAmateurShopAddOnMainFrame", UIParent, "BasicFrameTemplateWithInset")
 mainFrame:SetSize(500, 400)
@@ -127,7 +127,8 @@ local function SetPointsDisplay(total, animate)
         displayedPoints = total
         pointsText:SetText(tostring(total))
     end
-    ns.UpdatePointsWidget(total)
+    local catchCount = BassAmateurShopAddOnDB and #BassAmateurShopAddOnDB.catches or 0
+    ns.UpdatePointsWidget(total, catchCount)
 end
 SetPointsDisplay(0)
 

@@ -2,7 +2,7 @@ local _, ns = ...
 
 -- Small draggable widget to display angler points
 local widget = CreateFrame("Frame", "BassAmateurShopAddOnPointsWidget", UIParent)
-widget:SetSize(140, 50)
+widget:SetSize(160, 50)
 widget:SetPoint("TOPRIGHT", UIParent, "TOPRIGHT", -20, -20)
 widget:EnableMouse(true)
 widget:SetMovable(true)
@@ -49,14 +49,23 @@ pointsDisplay:SetShadowOffset(1, -1)
 pointsDisplay:SetTextColor(1, 0.82, 0)
 pointsDisplay:SetText("0")
 
+-- Catch count display
+local catchCountDisplay = widget:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+catchCountDisplay:SetPoint("BOTTOMLEFT", widget, "BOTTOMLEFT", 6, 6)
+catchCountDisplay:SetTextColor(0.8, 0.8, 0.8)
+catchCountDisplay:SetText("0 catches")
+
 widget:SetScript("OnLeave", function()
     GameTooltip:Hide()
 end)
 
 widget:Hide()
 
-function ns.UpdatePointsWidget(points)
+function ns.UpdatePointsWidget(points, catchCount)
     pointsDisplay:SetText(tostring(points))
+    if catchCount then
+        catchCountDisplay:SetText(tostring(catchCount) .. " catch" .. (catchCount == 1 and "" or "es"))
+    end
 end
 
 function ns.ShowPointsWidget(show)

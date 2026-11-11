@@ -62,7 +62,7 @@ local pointsWidgetNote = page:CreateFontString(nil, "OVERLAY", "GameFontHighligh
 pointsWidgetNote:SetPoint("TOPLEFT", pointsWidgetCheck, "BOTTOMLEFT", 4, 0)
 pointsWidgetNote:SetWidth(440)
 pointsWidgetNote:SetJustifyH("LEFT")
-pointsWidgetNote:SetText("|cff888888A small draggable widget showing your angler points.|r")
+pointsWidgetNote:SetText("|cff888888A small draggable widget showing your Angler Points™|r")
 
 local function RefreshAnnounceNote()
     if not IsInGuild() then
