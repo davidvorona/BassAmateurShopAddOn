@@ -49,14 +49,6 @@ pointsDisplay:SetShadowOffset(1, -1)
 pointsDisplay:SetTextColor(1, 0.82, 0)
 pointsDisplay:SetText("0")
 
--- Tooltip
-widget:SetScript("OnEnter", function(self)
-    GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-    GameTooltip:AddLine("Angler Points Widget")
-    GameTooltip:AddLine("Drag to move", 0.7, 0.7, 0.7)
-    GameTooltip:Show()
-end)
-
 widget:SetScript("OnLeave", function()
     GameTooltip:Hide()
 end)
