@@ -10,7 +10,16 @@ if not BassAmateurShopAddOnDB then
     }
 end
 
--- TODO: Add bonus points for the STV fishing contest.
+-- CRITICAL BUG: C_ChatInfo.SendChatMessage may fail for certain users for unknown reasons.
+-- I have tested multiple scenarios, including tainted context, HW-protected calls, and different chat throttling setups.
+-- Initiating the function directly from a command seems to work, which suggests it's a HW issue. But this would result
+-- in consistent behavior across all users, which is not what is observed, and SendChatMessage documentation claims that
+-- the "GUILD" target does not require a hardware event.
+-- Similarly, tainted context does not seem to be the issue: this AddOn was tested in isolation and makes no calls to
+-- any protected functions.
+-- A recently reported bug with a similar function suggests there is a bug with Trial and Veteran accounts:
+-- https://us.forums.blizzard.com/en/wow/t/guild-add-on-messages-from-some-players-are-accepted-result-0-but-never-delivered/2401862
+-- But it is a different function than C_ChatInfo.SendChatMessage, and the bug occurs on an account that is neither a Trial or Veteran.
 
 local mainFrame = CreateFrame("Frame", "BassAmateurShopAddOnMainFrame", UIParent, "BasicFrameTemplateWithInset")
 mainFrame:SetSize(500, 400)
