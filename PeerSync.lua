@@ -131,11 +131,31 @@ end
 
 local function friendRoster()
     local friends = {}
+    -- Regular in-game friends
     for i = 1, C_FriendList.GetNumFriends() do
         local info = C_FriendList.GetFriendInfoByIndex(i)
         if info and info.name then
             local name = Ambiguate(info.name, "guild")
             friends[name] = { name = info.name, connected = info.connected }
+        end
+    end
+    -- Battle.net friends (if available)
+    local numFriends = 0
+    if BNGetNumFriends and type(BNGetNumFriends) == "function" then
+        numFriends = BNGetNumFriends() or 0
+    end
+    for i = 1, numFriends do
+        local accountInfo = C_BattleNet.GetFriendAccountInfo(i)
+        if accountInfo then
+            local gameInfo = accountInfo.gameAccountInfo
+            
+            local isOnline = gameInfo and gameInfo.isOnline
+            local client = gameInfo and gameInfo.clientProgram -- e.g., "WoW"
+
+            if isOnline and client == "WoW" and gameInfo.realmID == GetRealmID() then
+                local name = Ambiguate(gameInfo.characterName, "guild")
+                friends[name] = { name = name, connected = isOnline }
+            end
         end
     end
     return friends
@@ -223,7 +243,11 @@ function sync.GetFriendData()
 end
 
 function sync.GetFriendCount()
-    return C_FriendList.GetNumFriends()
+    local count = C_FriendList.GetNumFriends()
+    if BNGetNumFriends and type(BNGetNumFriends) == "function" then
+        count = count + (BNGetNumFriends() or 0)
+    end
+    return count
 end
 
 local lastPrune = 0
