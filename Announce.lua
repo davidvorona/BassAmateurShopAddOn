@@ -25,12 +25,18 @@ end
 
 local queue, sinceLast = {}, COOLDOWN
 local pump = CreateFrame("Frame")
+-- https://wowwiki-archive.fandom.com/wiki/Using_OnUpdate_correctly
 pump:SetScript("OnUpdate", function(_, elapsed)
     sinceLast = sinceLast + elapsed
     if sinceLast < COOLDOWN or #queue == 0 then return end
     local message = table.remove(queue, 1)
     -- Re-check at send time in case the setting or guild tag changed while queued.
     if ns.AnnouncingEnabled() then
+        -- This method fails for chatType "GUILD" due to tainted context for some clients only.
+        -- The documentation claims that chatType "GUILD" does not require a hardware event:
+        -- https://warcraft.wiki.gg/wiki/API:C_ChatInfo.SendChatMessage
+        -- However, replacing the chatType "GUILD" with "PARTY" fixes the issue.
+        -- Reported: https://us.forums.blizzard.com/en/wow/t/wow-forever-1601-delayed-guild-chat-messages-blocked-as-tainted/2414879
         C_ChatInfo.SendChatMessage(message, "GUILD")
         sinceLast = 0
     else
