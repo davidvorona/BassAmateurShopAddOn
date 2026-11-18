@@ -3,8 +3,12 @@ local _, ns = ...
 local MAX_LOG_LINES = 500
 local ColorRarity = ns.ColorRarity
 
-local catchLog = CreateFrame("ScrollingMessageFrame", nil, ns.content)
-catchLog:SetAllPoints(ns.content)
+local page = CreateFrame("Frame", nil, ns.content)
+page:SetAllPoints(ns.content)
+
+local catchLog = CreateFrame("ScrollingMessageFrame", nil, page)
+catchLog:SetPoint("TOPLEFT", page, "TOPLEFT")
+catchLog:SetPoint("BOTTOMRIGHT", page, "BOTTOMRIGHT")
 catchLog:SetFontObject(GameFontHighlight)
 catchLog:SetJustifyH("LEFT")
 catchLog:SetFading(false)
@@ -37,7 +41,40 @@ catchLog:SetScript("OnHyperlinkLeave", function() GameTooltip:Hide() end)
 local CatchLog = {}
 ns.CatchLog = CatchLog
 
+local shareButton = CreateFrame("Button", nil, page, "UIPanelButtonTemplate")
+shareButton:SetSize(170, 24)
+shareButton:SetPoint("BOTTOMRIGHT", page, "BOTTOMRIGHT")
+shareButton:SetText("Share latest to guild")
+local shareEnabled = false
+local function SetShareEnabled(enabled)
+    shareEnabled = enabled
+    shareButton:EnableMouse(enabled)
+    shareButton:SetButtonState(enabled and "NORMAL" or "DISABLED")
+end
+shareButton:SetScript("OnClick", function()
+    if not shareEnabled then return end
+    ns.AnnounceLatestCatch()
+end)
+SetShareEnabled(false)
+shareButton:Hide()
+
+function CatchLog.ShowShareButton()
+    if shareButton:IsShown() then return false end
+    catchLog:ClearAllPoints()
+    catchLog:SetPoint("TOPLEFT", page, "TOPLEFT")
+    catchLog:SetPoint("BOTTOMRIGHT", page, "BOTTOMRIGHT", 0, 30)
+    shareButton:Show()
+    return true
+end
+
+function CatchLog.MarkLatestCatchShared()
+    SetShareEnabled(false)
+end
+
 function CatchLog.AddCatch(catch, index)
+    if ns.MeetsAnnounceRarity(catch) then
+        SetShareEnabled(true)
+    end
     local color = catch.link:match("|c(%x%x%x%x%x%x%x%x)") or "ffffffff"
     local name = catch.name or catch.link:match("%[(.-)%]") or "Unknown"
     local itemText = "|c" .. color .. "|Hbascatch:" .. index .. "|h[" .. name .. "]|h|r"
@@ -66,6 +103,7 @@ end
 
 function CatchLog.Clear()
     catchLog:Clear()
+    SetShareEnabled(false)
 end
 
 function CatchLog.Load()
@@ -80,5 +118,5 @@ end
 ns.RegisterTab({
     name = "Catch Log",
     icon = "Interface\\Icons\\Inv_Misc_Book_10",
-    page = catchLog,
+    page = page,
 })
