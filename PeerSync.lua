@@ -4,8 +4,11 @@ local _, ns = ...
 --   version|type|points|catchCount|c1,c2,...|bestPoints|bestItemId|sentTime
 -- Types: HELLO (asks guildmates and friends to reply), UPDATE (sent after catches),
 -- REPLY (whispered answer to a HELLO; never answered itself).
+-- Guild cache exchange uses 2|SYNC and 2|RELAY|subject|points|...|sentTime.
+-- A relay retains the original sender's timestamp, not the time it was forwarded.
 local PREFIX = "BASHOP"
 local VERSION = "1"
+local CACHE_VERSION = "2"
 local MAX_MESSAGE_LENGTH = 255
 local SEND_INTERVAL = 1.0
 local UPDATE_DEBOUNCE = 30
@@ -26,6 +29,7 @@ end
 
 -- Outgoing queue: one message per SEND_INTERVAL so a busy guild can't trip server throttling.
 local queue, pumping = {}, false
+local buildRelay
 
 local function pump()
     local item = table.remove(queue, 1)
@@ -33,14 +37,19 @@ local function pump()
         pumping = false
         return
     end
-    -- A failed send must not stop the queue from being pumped.
-    pcall(function()
-        if item.channel == "WHISPER" then
-            C_ChatInfo.SendAddonMessage(PREFIX, item.text, "WHISPER", item.target)
-        elseif IsInGuild() then
-            C_ChatInfo.SendAddonMessage(PREFIX, item.text, "GUILD")
+    if isSharing() then
+        local text = item.subject and buildRelay(item.subject, item.target) or item.text
+        if text then
+            local ok, err = pcall(function()
+                if item.channel == "WHISPER" then
+                    C_ChatInfo.SendAddonMessage(PREFIX, text, "WHISPER", item.target)
+                elseif IsInGuild() then
+                    C_ChatInfo.SendAddonMessage(PREFIX, text, "GUILD")
+                end
+            end)
+            if not ok then print("Bass Amateur Shop: failed to send leaderboard data: " .. tostring(err)) end
         end
-    end)
+    end
     C_Timer.After(SEND_INTERVAL, pump)
 end
 
@@ -165,32 +174,145 @@ local function isFriend(sender)
     return friendRoster()[Ambiguate(sender, "guild")] ~= nil
 end
 
-local lastReceived, lastReplied, lastHello = {}, {}, {}
+local function isSelf(name)
+    return Ambiguate(name, "guild") == Ambiguate(ns.PlayerFullName(), "guild")
+end
+
+local function newestSummary(name)
+    local newest
+    for _, data in ipairs({ db().guildData, db().friendData }) do
+        for key, summary in pairs(data) do
+            if Ambiguate(key, "guild") == name and
+                (not newest or (summary.sentTime or 0) > (newest.sentTime or 0)) then
+                newest = summary
+            end
+        end
+    end
+    return newest
+end
+
+local function saveSummary(name, summary, guildMember, friend, direct)
+    name = Ambiguate(name, "guild")
+    local previous = newestSummary(name)
+    if previous and ((previous.sentTime or 0) > summary.sentTime or
+        ((previous.sentTime or 0) == summary.sentTime and not direct)) then
+        local changed = false
+        if guildMember and (not db().guildData[name] or
+            (db().guildData[name].sentTime or 0) < (previous.sentTime or 0)) then
+            db().guildData[name] = previous
+            changed = true
+        end
+        if friend and (not db().friendData[name] or
+            (db().friendData[name].sentTime or 0) < (previous.sentTime or 0)) then
+            db().friendData[name] = previous
+            changed = true
+        end
+        if changed and sync.onUpdate then sync.onUpdate() end
+        return
+    end
+
+    -- Older versions may have stored the same character with and without a realm.
+    for _, data in ipairs({ db().guildData, db().friendData }) do
+        for key in pairs(data) do
+            if Ambiguate(key, "guild") == name then data[key] = nil end
+        end
+    end
+    summary.received = summary.sentTime
+    if guildMember then db().guildData[name] = summary end
+    if friend then db().friendData[name] = summary end
+    if sync.onUpdate then sync.onUpdate() end
+end
+
+buildRelay = function(subject, target)
+    if not IsInGuild() then return nil end
+    local roster = guildRosterNames()
+    if not roster[subject] or not roster[Ambiguate(target, "guild")] then return nil end
+    local summary = db().guildData[subject]
+    if not summary or not summary.sentTime then return nil end
+    local text = table.concat({
+        CACHE_VERSION, "RELAY", subject, summary.points, summary.catches,
+        table.concat(summary.rarities, ","), summary.bestPoints, summary.bestItemId, summary.sentTime,
+    }, "|")
+    if #text > MAX_MESSAGE_LENGTH then
+        print("Bass Amateur Shop: leaderboard data for " .. subject .. " is too long to relay.")
+        return nil
+    end
+    return text
+end
+
+local lastReceived, lastReplied, lastHello, lastSyncReply = {}, {}, {}, {}
+local worldEntered, requestedGuild = false, nil
+
+local function requestGuildCache()
+    if not worldEntered or not isSharing() or not IsInGuild() then return end
+    local guild = GetGuildInfo("player")
+    if not guild or guild == requestedGuild or not next(guildRosterNames()) then return end
+    requestedGuild = guild
+    enqueue({ channel = "GUILD", text = CACHE_VERSION .. "|SYNC" })
+end
 
 local function sendReply(target)
+    if not isSharing() then return end
     enqueue({ channel = "WHISPER", target = target, text = encode("REPLY") })
 end
 
 local function handleMessage(message, channel, sender)
     if not isSharing() then return end
-    if Ambiguate(sender, "short") == ns.PlayerFullName() then return end
+    if isSelf(sender) then return end
     if channel ~= "GUILD" and channel ~= "WHISPER" then return end
-    local guildMember = channel == "GUILD" or guildRosterNames()[Ambiguate(sender, "guild")] ~= nil
+    local roster = guildRosterNames()
+    local senderName = Ambiguate(sender, "guild")
+    local guildMember = IsInGuild() and (channel == "GUILD" or roster[senderName] ~= nil)
     local friend = isFriend(sender)
     -- Whispers can come from anyone, so only accept them from the guild or friend roster.
     if channel == "WHISPER" and not guildMember and not friend then return end
 
     local now = GetTime()
-    if lastReceived[sender] and now - lastReceived[sender] < MIN_RECEIVE_INTERVAL then return end
-    lastReceived[sender] = now
+    if message == CACHE_VERSION .. "|SYNC" then
+        if channel ~= "GUILD" or not guildMember or not roster[senderName] then return end
+        if lastSyncReply[senderName] and now - lastSyncReply[senderName] < REPLY_COOLDOWN then return end
+        lastSyncReply[senderName] = now
+        C_Timer.After(1 + math.random() * 4, function()
+            if not isSharing() or not IsInGuild() then return end
+            local currentRoster = guildRosterNames()
+            if not currentRoster[senderName] then return end
+            local subjects = {}
+            for key, summary in pairs(db().guildData) do
+                local subject = Ambiguate(key, "guild")
+                if currentRoster[subject] and not isSelf(subject) and subject ~= senderName and
+                    summary.sentTime then
+                    subjects[subject] = true
+                end
+            end
+            for subject in pairs(subjects) do
+                -- Normalize legacy keys before building the queued relay.
+                local newest = newestSummary(subject)
+                if newest then db().guildData[subject] = newest end
+                enqueue({ channel = "WHISPER", target = sender, subject = subject })
+            end
+        end)
+        return
+    end
+
+    if type(message) ~= "string" or #message > MAX_MESSAGE_LENGTH then return end
+    local subject, fields = message:match("^2|RELAY|([^|]+)|(.+)$")
+    if subject then
+        subject = Ambiguate(subject, "guild")
+        if channel ~= "WHISPER" or not guildMember or not roster[senderName] or
+            not roster[subject] or isSelf(subject) then return end
+        local _, summary = decode(VERSION .. "|REPLY|" .. fields)
+        if not summary then return end
+        saveSummary(subject, summary, true, isFriend(subject), false)
+        return
+    end
 
     local messageType, summary = decode(message)
     if not messageType then return end
+    local receiveKey = senderName .. "|" .. messageType
+    if lastReceived[receiveKey] and now - lastReceived[receiveKey] < MIN_RECEIVE_INTERVAL then return end
+    lastReceived[receiveKey] = now
 
-    summary.received = time()
-    if guildMember then db().guildData[sender] = summary end
-    if friend then db().friendData[sender] = summary end
-    if sync.onUpdate then sync.onUpdate() end
+    saveSummary(senderName, summary, guildMember, friend, true)
 
     if messageType == "HELLO" and (not lastReplied[sender] or now - lastReplied[sender] > REPLY_COOLDOWN) then
         lastReplied[sender] = now
@@ -221,7 +343,12 @@ end
 
 function sync.SetSharing(enabled)
     db().shareEnabled = enabled
-    if enabled then sync.NotifyChange() end
+    if enabled then
+        sync.NotifyChange()
+        requestGuildCache()
+    else
+        requestedGuild = nil
+    end
 end
 
 -- Own stats in the same shape as received summaries, for comparisons.
@@ -251,8 +378,6 @@ function sync.GetFriendCount()
 end
 
 local lastPrune = 0
-local worldEntered = false
-
 local function pruneGuildData()
     local now = GetTime()
     if now - lastPrune < PRUNE_INTERVAL then return end
@@ -315,6 +440,7 @@ frame:SetScript("OnEvent", function(self, event, ...)
             if isSharing() then
                 if IsInGuild() then
                     enqueue({ channel = "GUILD", text = encode("HELLO") })
+                    requestGuildCache()
                 end
                 announceFriends()
             end
@@ -324,6 +450,7 @@ frame:SetScript("OnEvent", function(self, event, ...)
         if prefix == PREFIX then handleMessage(message, channel, sender) end
     elseif event == "GUILD_ROSTER_UPDATE" then
         pruneGuildData()
+        requestGuildCache()
     elseif event == "FRIENDLIST_UPDATE" then
         pruneFriendData()
         if worldEntered then announceFriends() end
