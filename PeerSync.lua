@@ -47,7 +47,7 @@ local function pump()
                     C_ChatInfo.SendAddonMessage(PREFIX, text, "GUILD")
                 end
             end)
-            if not ok then print("Bass Amateur Shop: failed to send leaderboard data: " .. tostring(err)) end
+            if not ok then print("[BAS] Failed to send leaderboard data: " .. tostring(err)) end
         end
     end
     C_Timer.After(SEND_INTERVAL, pump)
@@ -234,7 +234,7 @@ buildRelay = function(subject, target)
         table.concat(summary.rarities, ","), summary.bestPoints, summary.bestItemId, summary.sentTime,
     }, "|")
     if #text > MAX_MESSAGE_LENGTH then
-        print("Bass Amateur Shop: leaderboard data for " .. subject .. " is too long to relay.")
+        print("[BAS] Leaderboard data for " .. subject .. " is too long to relay.")
         return nil
     end
     return text

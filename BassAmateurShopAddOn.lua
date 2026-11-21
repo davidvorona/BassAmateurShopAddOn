@@ -126,7 +126,7 @@ SlashCmdList["BASSAMATEURSHOPADDON"] = function(msg)
     local shareArg = msg and msg:lower():match("^%s*share%s+(%a+)%s*$")
     if shareArg == "on" or shareArg == "off" then
         ns.PeerSync.SetSharing(shareArg == "on")
-        print("Bass Amateur Shop: guild and friend sharing " .. shareArg .. ".")
+        print("[BAS] Guild and friend sharing " .. shareArg .. ".")
         return
     end
     if msg and msg:lower():match("^%s*reset%s*$") then
@@ -136,7 +136,7 @@ SlashCmdList["BASSAMATEURSHOPADDON"] = function(msg)
         SetPointsDisplay(0)
         ns.RankingsTab.Refresh()
         ns.PeerSync.NotifyChange()
-        print("Bass Amateur Shop: catch history cleared.")
+        print("[BAS] Catch history cleared.")
         return
     end
     if mainFrame:IsShown() then
